@@ -20,10 +20,27 @@ class AESField(models.CharField):
             raise ValueError('AES Prefix cannot be null.')
         self.aes_method = getattr(settings, 'AES_METHOD', 'aesfield.default')
         self.aes_key = kwargs.pop('aes_key', '')
+        self.model_instance = None
         super(AESField, self).__init__(*args, **kwargs)
 
+    def __set__(self, instance, value):
+        import ipdb; ipdb.set_trace()
+        self.model_instance = instance
+        super(AESField,self).__set__(instance, value)
+
+    def __get__(self, instance, instance_type=None):
+        import ipdb; ipdb.set_trace()
+        self.model_instance = instance
+        return super(AESField, self).__get__(
+            instance, instance_type=None)
+
     def get_aes_key(self):
-        result = import_module(self.aes_method).lookup(self.aes_key)
+        key_val = self.aes_key
+        if self.model_instance and hasattr(key_val, '__call__'):
+            result = key_val(self.model_instance)
+        else:
+            result = import_module(
+                self.aes_method).lookup(self.aes_key)
         if len(result) < 10:
             raise ValueError('Passphrase cannot be less than 10 chars.')
         return result
