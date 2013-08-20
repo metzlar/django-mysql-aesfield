@@ -23,20 +23,13 @@ class AESField(models.CharField):
         self.model_instance = None
         super(AESField, self).__init__(*args, **kwargs)
 
-    def __set__(self, instance, value):
-        import ipdb; ipdb.set_trace()
-        self.model_instance = instance
-        super(AESField,self).__set__(instance, value)
-
-    def __get__(self, instance, instance_type=None):
-        import ipdb; ipdb.set_trace()
-        self.model_instance = instance
-        return super(AESField, self).__get__(
-            instance, instance_type=None)
-
+    def pre_save(self, model_instance, add):
+        self.model_instance = model_instance
+        return super(AESField,self).pre_save(model_instance, add)
+        
     def get_aes_key(self):
         key_val = self.aes_key
-        if self.model_instance and hasattr(key_val, '__call__'):
+        if hasattr(key_val, '__call__'):
             result = key_val(self.model_instance)
         else:
             result = import_module(
@@ -52,6 +45,7 @@ class AESField(models.CharField):
         raise EncryptedField('You cannot do lookups on an encrypted field.')
 
     def get_db_prep_value(self, value, connection, prepared=False):
+        import ipdb; ipdb.set_trace()
         if not prepared and value:
             cursor = connection.cursor()
             cursor.execute('SELECT CONCAT(%s, HEX(AES_ENCRYPT(%s, %s)))',
